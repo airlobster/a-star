@@ -36,8 +36,8 @@ static int get_path(const a_star_graph_t* graph, a_star_node_t*** path) {
 }
 
 static int _cbCmpEdges(const void* v1, const void* v2) {
-	const a_star_edge_t* e1 = (const a_star_edge_t*)v1;
-	const a_star_edge_t* e2 = (const a_star_edge_t*)v2;
+	const a_star_edge_t* e1 = *(const a_star_edge_t**)v1;
+	const a_star_edge_t* e2 = *(const a_star_edge_t**)v2;
 	return e1->from - e2->from;
 }
 
@@ -76,7 +76,7 @@ int a_star_shortest_path(
 	*path = 0;
 
 	// sort edges by 'from'
-	qsort(graph->edges, graph->nedges, sizeof(a_star_edge_t), _cbCmpEdges);
+	qsort(graph->edges, graph->nedges, sizeof(a_star_edge_t*), _cbCmpEdges);
 
 	// attach private data to each node
 	for(i=0; i < graph->nnodes; i++)
@@ -105,10 +105,10 @@ int a_star_shortest_path(
 		}
 
 		// search edges sorted array for beginning of 'from'==curr
-		for(i=0; i < graph->nedges && graph->edges[i].from != curr; i++)
+		for(i=0; i < graph->nedges && graph->edges[i]->from != curr; i++)
 			;
-		for(; i < graph->nedges && graph->edges[i].from==curr; i++) {
-			a_star_node_t* neighbor = graph->edges[i].to;
+		for(; i < graph->nedges && graph->edges[i]->from==curr; i++) {
+			a_star_node_t* neighbor = graph->edges[i]->to;
 			if( NINFO(neighbor)->close )
 				continue;
 			if( dlist_exists(l_open, neighbor) )
@@ -117,7 +117,7 @@ int a_star_shortest_path(
 				progressInfo.analized = neighbor;
 				(*progress)(&progressInfo, cookie);
 			}
-			long gCost = (*g_dist)(curr, neighbor, cookie);
+			long gCost = (*g_dist)(curr, neighbor, cookie) + graph->edges[i]->cost;
 			if( gCost > NINFO(neighbor)->g )
 				continue;
 			long hCost = (*h_dist)(neighbor, graph->end, cookie);

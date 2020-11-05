@@ -49,6 +49,10 @@ typedef struct _cell_t {
 	unsigned int attributes;
 } cell_t;
 
+typedef struct _edge_t {
+	a_star_edge_t a;
+} edge_t;
+
 typedef struct _grid_t {
 	int rows, columns;
 	cell_t* g;
@@ -128,17 +132,12 @@ static inline cell_t* get_valid_neighbor(const grid_t* g, int row, int column) {
 		return 0;
 	return cell;
 }
-static a_star_edge_t* create_edge(cell_t* from, cell_t* to) {
-	a_star_edge_t* edge = (a_star_edge_t*)malloc(sizeof(a_star_edge_t));
-	edge->from = (a_star_node_t*)from;
-	edge->to = (a_star_node_t*)to;
+static edge_t* create_edge(cell_t* from, cell_t* to) {
+	edge_t* edge = (edge_t*)malloc(sizeof(edge_t));
+	edge->a.from = (a_star_node_t*)from;
+	edge->a.to = (a_star_node_t*)to;
+	edge->a.cost = 0;
 	return edge;
-}
-static int _cbCollectEdges(int index, void* data, void* cookie) {
-	a_star_edge_t* edge = (a_star_edge_t*)data;
-	a_star_edge_t* edges = (a_star_edge_t*)cookie;
-	edges[index] = *edge;
-	return 0;
 }
 static void graph_from_grid(const grid_t* g, a_star_graph_t** graph) {
 	dlist_t *nodes, *edges;
@@ -175,11 +174,9 @@ static void graph_from_grid(const grid_t* g, a_star_graph_t** graph) {
 	*graph = (a_star_graph_t*)malloc(sizeof(a_star_graph_t));
 	// node pointers array
 	dlist_detach(nodes, &(*graph)->nnodes, (void***)&(*graph)->nodes);
-	// edges array
-	(*graph)->nedges = dlist_len(edges);
-	(*graph)->edges = (a_star_edge_t*)malloc(sizeof(a_star_edge_t) * (*graph)->nedges);
-	dlist_enum_ex(edges, _cbCollectEdges, (*graph)->edges);
-	// end points
+	// edge pointers array
+	dlist_detach(edges, &(*graph)->nedges, (void***)&(*graph)->edges);
+
 	(*graph)->begin = (a_star_node_t*)g->start;
 	(*graph)->end = (a_star_node_t*)g->end;
 
@@ -187,7 +184,10 @@ static void graph_from_grid(const grid_t* g, a_star_graph_t** graph) {
 	dlist_deinit(edges);
 }
 static void free_graph(a_star_graph_t* graph) {
+	int i;
 	free(graph->nodes);
+	for(i=0; i < graph->nedges; i++)
+		free(graph->edges[i]);
 	free(graph->edges);
 	free(graph);
 }

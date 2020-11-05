@@ -11,12 +11,13 @@ typedef struct _a_star_node_t {
 
 typedef struct _a_star_edge_t {
 	a_star_node_t *from, *to;
+	long cost;
 } a_star_edge_t;
 
 typedef struct _a_star_graph_t {
 	a_star_node_t** nodes;	// array of node pointers
 	size_t nnodes;
-	a_star_edge_t* edges;	// array of edges
+	a_star_edge_t** edges;	// array of edge pointers
 	size_t nedges;
 	a_star_node_t *begin, *end;
 } a_star_graph_t;
